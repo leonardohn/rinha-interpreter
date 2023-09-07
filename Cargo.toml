@@ -1,0 +1,18 @@
+[package]
+name = "rinha-interpreter"
+version = "0.1.0"
+authors = ["Leonardo Neumann <leonardo@neumann.dev.br>"]
+edition = "2021"
+description = "Um interpretador de ASTs no formato rinha"
+readme = "README.md"
+homepage = "https://github.com/leonardohn/rinha-interpreter"
+repository = "https://github.com/leonardohn/rinha-interpreter"
+license = "MIT"
+publish = false
+
+[dependencies]
+serde_json = "1.0.105"
+
+[dependencies.serde]
+version = "1.0.188"
+features = ["derive"]
