@@ -202,29 +202,29 @@ impl Evaluator {
 }
 
 macro_rules! impl_binary_op {
-    ($id:ident [$in:ident => $out:ident] = $ev:expr) => {
-        impl Evaluator {
+    ($($id:ident [($lhs:ident, $rhs:ident) => $out:ident] = $ev:expr;)*) => {
+        impl Evaluator {$(
             fn $id(env: &mut Rc<RefCell<Env>>, term: Binary) -> Term {
                 let lhs = match Self::eval(env, *term.lhs) {
                     term @ Term::Error(_) => return term,
-                    Term::$in($in { value, .. }) => value,
+                    Term::$lhs($lhs { value, .. }) => value,
                     term => {
                         let message = "Unexpected left operand".into();
                         let full_text = format!(
                             "Expected operand of type \"{}\"",
-                            stringify!($in),
+                            stringify!($lhs),
                         );
                         return error(term, message, full_text);
                     }
                 };
                 let rhs = match Self::eval(env, *term.rhs) {
                     term @ Term::Error(_) => return term,
-                    Term::$in($in { value, .. }) => value,
+                    Term::$rhs($rhs { value, .. }) => value,
                     term => {
                         let message = "Unexpected right operand".into();
                         let full_text = format!(
                             "Expected operand of type \"{}\"",
-                            stringify!($in),
+                            stringify!($rhs),
                         );
                         return error(term, message, full_text);
                     }
@@ -233,21 +233,23 @@ macro_rules! impl_binary_op {
                 let location = term.location;
                 Term::$out($out { value, location })
             }
-        }
+        )*}
     };
 }
 
-impl_binary_op!(eval_add[Int => Int] = i32::wrapping_add);
-impl_binary_op!(eval_sub[Int => Int] = i32::wrapping_sub);
-impl_binary_op!(eval_mul[Int => Int] = i32::wrapping_mul);
-impl_binary_op!(eval_div[Int => Int] = i32::wrapping_div);
-impl_binary_op!(eval_rem[Int => Int] = i32::wrapping_rem);
-impl_binary_op!(eval_lt[Int => Bool] = |lhs, rhs| lhs < rhs);
-impl_binary_op!(eval_gt[Int => Bool] = |lhs, rhs| lhs > rhs);
-impl_binary_op!(eval_lte[Int => Bool] = |lhs, rhs| lhs <= rhs);
-impl_binary_op!(eval_gte[Int => Bool] = |lhs, rhs| lhs >= rhs);
-impl_binary_op!(eval_or[Bool => Bool] = |lhs, rhs| lhs || rhs);
-impl_binary_op!(eval_and[Bool => Bool] = |lhs, rhs| lhs && rhs);
+impl_binary_op! {
+    eval_add[(Int, Int) => Int] = i32::wrapping_add;
+    eval_sub[(Int, Int) => Int] = i32::wrapping_sub;
+    eval_mul[(Int, Int) => Int] = i32::wrapping_mul;
+    eval_div[(Int, Int) => Int] = i32::wrapping_div;
+    eval_rem[(Int, Int) => Int] = i32::wrapping_rem;
+    eval_lt[(Int, Int) => Bool] = |lhs, rhs| lhs < rhs;
+    eval_gt[(Int, Int) => Bool] = |lhs, rhs| lhs > rhs;
+    eval_lte[(Int, Int) => Bool] = |lhs, rhs| lhs <= rhs;
+    eval_gte[(Int, Int) => Bool] = |lhs, rhs| lhs >= rhs;
+    eval_or[(Bool, Bool) => Bool] = |lhs, rhs| lhs || rhs;
+    eval_and[(Bool, Bool) => Bool] = |lhs, rhs| lhs && rhs;
+}
 
 pub fn error(term: Term, message: String, full_text: String) -> Term {
     match term {
@@ -456,19 +458,19 @@ mod tests {
     }
 
     macro_rules! impl_eval_binary {
-        ($id:ident [$in:ident => $out:ident] = {
-            $op1:expr, $opd:ident, $op2:expr$(,)? => $res:expr$(,)?
-        }) => {
+        ($($id:ident [$opd:ident; ($lhs:ident, $rhs:ident) => $out:ident] = {
+            $(($op1:expr, $op2:expr$(,)?) => $res:expr;)*
+        };)*) => {$(
             #[test]
-            fn $id() {
+            fn $id() {$(
                 let mut env = Default::default();
                 let op = BinaryOp::$opd;
                 let value = $op1;
                 let location = Default::default();
-                let lhs = Box::new(Term::$in($in { value, location }));
+                let lhs = Box::new(Term::$lhs($lhs { value, location }));
                 let value = $op2;
                 let location = Default::default();
-                let rhs = Box::new(Term::$in($in { value, location }));
+                let rhs = Box::new(Term::$rhs($rhs { value, location }));
                 let location = Default::default();
                 let term = Term::Binary(Binary {
                     lhs,
@@ -481,23 +483,102 @@ mod tests {
                 let location = Default::default();
                 let term = Term::$out($out { value, location });
                 assert_eq!(term, result);
-            }
+            )*})*
         };
     }
 
-    impl_eval_binary!(eval_add[Int => Int] = { 1, Add, 1 => 2 });
-    impl_eval_binary!(eval_sub[Int => Int] = { 2, Sub, 1 => 1 });
-    impl_eval_binary!(eval_mul[Int => Int] = { 2, Mul, 1 => 2 });
-    impl_eval_binary!(eval_div[Int => Int] = { 2, Div, 2 => 1 });
-    impl_eval_binary!(eval_rem[Int => Int] = { 2, Rem, 2 => 0 });
-    impl_eval_binary!(eval_eq_int[Int => Bool] = { 1, Eq, 2 => false });
-    impl_eval_binary!(eval_eq_bool[Bool => Bool] = { false, Eq, true => false });
-    impl_eval_binary!(eval_neq_int[Int => Bool] = { 1, Neq, 2 => true });
-    impl_eval_binary!(eval_neq_bool[Bool => Bool] = { false, Neq, true => true });
-    impl_eval_binary!(eval_lt[Int => Bool] = { 2, Lt, 2 => false });
-    impl_eval_binary!(eval_gt[Int => Bool] = { 2, Gt, 2 => false });
-    impl_eval_binary!(eval_lte[Int => Bool] = { 2, Lte, 2 => true });
-    impl_eval_binary!(eval_gte[Int => Bool] = { 2, Gte, 2 => true });
-    impl_eval_binary!(eval_or[Bool => Bool] = { true, Or, false => true });
-    impl_eval_binary!(eval_and[Bool => Bool] = { true, And, false => false });
+    impl_eval_binary! {
+        eval_add[Add; (Int, Int) => Int] = {
+            (1, 1) => 2;
+            (1, -1) => 0;
+            (-1, -1) => -2;
+            (1, i32::MAX) => i32::MIN;
+        };
+
+        eval_sub[Sub; (Int, Int) => Int] = {
+            (1, 1) => 0;
+            (1, -1) => 2;
+            (-1, -1) => 0;
+            (-1, i32::MAX) => i32::MIN;
+        };
+
+        eval_mul[Mul; (Int, Int) => Int] = {
+            (2, 1) => 2;
+            (1, -1) => -1;
+            (-1, -1) => 1;
+            (2, i32::MAX) => -2;
+        };
+
+        eval_div[Div; (Int, Int) => Int] = {
+            (2, 2) => 1;
+            (1, -1) => -1;
+            (-1, -1) => 1;
+            (2, i32::MAX) => 0;
+        };
+
+        eval_rem[Rem; (Int, Int) => Int] = {
+            (0, 2) => 0;
+            (1, 2) => 1;
+            (2, 2) => 0;
+            (3, 2) => 1;
+        };
+
+        eval_eq_int[Eq; (Int, Int) => Bool] = {
+            (1, 1) => true;
+            (1, 2) => false;
+        };
+
+        eval_eq_bool[Eq; (Bool, Bool) => Bool] = {
+            (true, true) => true;
+            (true, false) => false;
+        };
+
+        eval_neq_int[Neq; (Int, Int) => Bool] = {
+            (1, 1) => false;
+            (1, 2) => true;
+        };
+
+        eval_neq_bool[Neq; (Bool, Bool) => Bool] = {
+            (true, true) => false;
+            (true, false) => true;
+        };
+
+        eval_lt[Lt; (Int, Int) => Bool] = {
+            (1, 1) => false;
+            (2, 1) => false;
+            (1, 2) => true;
+        };
+
+        eval_gt[Gt; (Int, Int) => Bool] = {
+            (1, 1) => false;
+            (2, 1) => true;
+            (1, 2) => false;
+        };
+
+        eval_lte[Lte; (Int, Int) => Bool] = {
+            (1, 1) => true;
+            (2, 1) => false;
+            (1, 2) => true;
+        };
+
+        eval_gte[Gte; (Int, Int) => Bool] = {
+            (1, 1) => true;
+            (2, 1) => true;
+            (1, 2) => false;
+        };
+
+        eval_or[Or; (Bool, Bool) => Bool] = {
+            (false, false) => false;
+            (false, true) => true;
+            (true, false) => true;
+            (true, true) => true;
+        };
+
+        eval_and[And; (Bool, Bool) => Bool] = {
+            (false, false) => false;
+            (false, true) => false;
+            (true, false) => false;
+            (true, true) => true;
+        };
+    }
 }
