@@ -118,14 +118,18 @@ impl Evaluator {
     }
 
     fn eval_let(env: &mut Rc<RefCell<Env>>, term: Let) -> Term {
-        let value = Self::eval(env, *term.value);
-        let name = &term.name.text;
+        match Self::eval(env, *term.value) {
+            value @ Term::Error(_) => value,
+            value => {
+                let name = &term.name.text;
 
-        if name != "_" {
-            env.borrow_mut().set(name, value);
+                if name != "_" {
+                    env.borrow_mut().set(name, value);
+                }
+
+                Self::eval(env, *term.next)
+            }
         }
-
-        Self::eval(env, *term.next)
     }
 
     fn eval_print(env: &mut Rc<RefCell<Env>>, term: Print) -> Term {
