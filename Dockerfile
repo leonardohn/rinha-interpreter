@@ -1,10 +1,8 @@
 FROM rust:1.71.0-slim
 
-RUN mkdir -p /work
-
-COPY . /work
-
 WORKDIR /work
+
+COPY . .
 
 RUN cargo build --release
 
