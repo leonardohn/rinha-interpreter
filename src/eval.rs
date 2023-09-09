@@ -8,6 +8,7 @@ use crate::env::Env;
 pub struct Evaluator;
 
 impl Evaluator {
+    #[inline]
     pub fn eval(env: &mut Rc<RefCell<Env>>, term: Term) -> Term {
         match term {
             term @ Term::Int(_) => term,
@@ -87,6 +88,7 @@ impl Evaluator {
         }
     }
 
+    #[inline]
     fn eval_binary(env: &mut Rc<RefCell<Env>>, term: Binary) -> Term {
         match term.op {
             BinaryOp::Add => Self::eval_add(env, term),
