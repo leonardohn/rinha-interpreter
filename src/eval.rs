@@ -131,21 +131,21 @@ impl Evaluator {
     fn eval_print(env: &mut Rc<RefCell<Env>>, term: Print) -> Term {
         let term = Self::eval(env, *term.value);
 
-        match &term {
-            &Term::Error(_) => term,
-            &Term::Int(Int { ref value, .. }) => {
+        match term {
+            Term::Error(_) => term,
+            Term::Int(Int { ref value, .. }) => {
                 println!("{value}");
                 term
             }
-            &Term::Str(Str { ref value, .. }) => {
+            Term::Str(Str { ref value, .. }) => {
                 println!("{value}");
                 term
             }
-            &Term::Bool(Bool { ref value, .. }) => {
+            Term::Bool(Bool { ref value, .. }) => {
                 println!("{value}");
                 term
             }
-            &Term::Function(Function { .. }) => {
+            Term::Function(Function { .. }) => {
                 println!("<function>");
                 term
             }
