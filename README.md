@@ -5,11 +5,43 @@ competir na [Rinha de Compiler][rinha].
 
 [rinha]: https://github.com/aripiprazole/rinha-de-compiler
 
+## Objetivos
+
+Este interpretador foi desenvolvido com os objetivos de ser correto,
+conciso e simples de entender. Se sobrar tempo pretendo desenvolver
+outra submissão orientada a performance.
+
 ## Estado
 
-O interpretador já está implementado com 100% da funcionalidade
-esperada, porém algumas mudanças menores poderão acontecer até
-a data limite da rinha.
+Este interpretador implementa os seguintes recursos:
+
+- [X] Funções 
+- [X] Variáveis
+- [X] Condicionais
+- [X] Inteiros
+    - [X] Add
+    - [X] Sub
+    - [X] Mul
+    - [X] Div
+    - [X] Rem
+    - [X] Lt
+    - [X] Gt
+    - [X] Lte
+    - [X] Gte
+    - [X] Eq
+    - [X] Neq
+- [X] Booleanos
+    - [X] And
+    - [X] Or
+    - [X] Eq
+    - [X] Neq
+- [X] Strings
+    - [ ] Add
+    - [X] Eq
+    - [X] Neq
+- [X] Tuplas
+    - [X] First
+    - [X] Second
 
 ## Instruções (Docker)
 
