@@ -23,16 +23,17 @@ impl Env {
     }
 
     pub fn get(&self, name: &str) -> Option<Term> {
-        match self.vars.get(name) {
-            Some(value) => Some(value.clone()),
-            None => self
-                .parent
+        self.vars.get(name).cloned().or_else(|| {
+            self.parent
                 .as_ref()
-                .and_then(|o| o.borrow().get(name).clone()),
-        }
+                .and_then(|o| o.borrow().get(name).clone())
+        })
     }
 
-    pub fn set(&mut self, name: &str, term: Term) {
-        self.vars.insert(name.to_string(), term);
+    pub fn set(&mut self, name: &str, term: Term) -> Option<Term> {
+        match self.vars.get(name) {
+            Some(_) => Some(term),
+            None => self.vars.insert(name.to_string(), term),
+        }
     }
 }

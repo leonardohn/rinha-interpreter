@@ -124,7 +124,12 @@ impl Evaluator {
                 let name = &term.name.text;
 
                 if name != "_" {
-                    env.borrow_mut().set(name, value);
+                    if let Some(value) = env.borrow_mut().set(name, value) {
+                        let message = "Redefined variable".into();
+                        let full_text =
+                            format!("Variable \"{name}\" is already defined");
+                        return error(value, message, full_text);
+                    }
                 }
 
                 Self::eval(env, *term.next)
