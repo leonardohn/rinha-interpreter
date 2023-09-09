@@ -15,9 +15,6 @@ outra submissão orientada a performance.
 
 Este interpretador implementa os seguintes recursos:
 
-- [X] Funções 
-- [X] Variáveis
-- [X] Condicionais
 - [X] Inteiros
     - [X] Add
     - [X] Sub
@@ -42,6 +39,10 @@ Este interpretador implementa os seguintes recursos:
 - [X] Tuplas
     - [X] First
     - [X] Second
+- [X] Variáveis
+- [X] Condicionais
+- [X] Funções
+    - [ ] Recursão de cauda
 
 ## Instruções (Docker)
 
