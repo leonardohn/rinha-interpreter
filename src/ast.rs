@@ -41,6 +41,15 @@ impl Location {
             filename: filename.into(),
         }
     }
+
+    pub fn merge(self, other: Self) -> Self {
+        assert_eq!(self.filename, other.filename);
+        Self {
+            start: self.start,
+            end: other.end,
+            filename: self.filename,
+        }
+    }
 }
 
 pub trait Element {
