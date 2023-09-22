@@ -2,11 +2,34 @@ pub mod ast;
 pub mod env;
 pub mod eval;
 
+use std::fmt;
+
+use crate::ast::Term;
 use crate::eval::Evaluator;
+
+#[derive(Debug)]
+pub struct EvalError(ast::Error);
+
+impl fmt::Display for EvalError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let ast::Location {
+            start,
+            end,
+            filename,
+        } = &self.0.location;
+        let message = &self.0.message;
+        let full_text = &self.0.full_text;
+        writeln!(f, "[Error ({}:{}:{})] {}", filename, start, end, message)?;
+        writeln!(f, "{}", full_text)?;
+        Ok(())
+    }
+}
+
+impl std::error::Error for EvalError {}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args().collect::<Vec<_>>();
-    
+
     if args.len() != 2 {
         eprintln!("Usage: {} <json-file>", args[0]);
         return Ok(());
@@ -14,12 +37,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let contents = std::fs::read_to_string(args.pop().unwrap())?;
     let file: ast::File = serde_json::from_str(&contents)?;
-    
+
     let mut env = Default::default();
     let term = file.expression;
-    let _result = Evaluator::eval(&mut env, term);
+    let result = Evaluator::eval(&mut env, term);
 
-    Ok(())
+    match result {
+        Term::Error(e) => Err(Box::new(EvalError(e))),
+        _ => Ok(()),
+    }
 }
 
 #[cfg(test)]
