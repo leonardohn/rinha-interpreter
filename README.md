@@ -33,7 +33,7 @@ Este interpretador implementa os seguintes recursos:
     - [X] Eq
     - [X] Neq
 - [X] Strings
-    - [ ] Add
+    - [X] Add
     - [X] Eq
     - [X] Neq
 - [X] Tuplas
@@ -42,7 +42,6 @@ Este interpretador implementa os seguintes recursos:
 - [X] Variáveis
 - [X] Condicionais
 - [X] Funções
-    - [ ] Recursão de cauda
 
 ## Instruções (Docker)
 

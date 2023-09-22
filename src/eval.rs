@@ -157,7 +157,7 @@ impl Evaluator {
                 term
             }
             Term::Function(Function { .. }) => {
-                println!("<function>");
+                println!("<#closure>");
                 term
             }
             _ => {
@@ -210,6 +210,70 @@ impl Evaluator {
             }
         }
     }
+
+    fn eval_add(env: &mut Rc<RefCell<Env>>, term: Binary) -> Term {
+        let lhs = Self::eval(env, *term.lhs);
+        let rhs = Self::eval(env, *term.rhs);
+        match (lhs, rhs) {
+            (term @ Term::Error(_), _) => term,
+            (_, term @ Term::Error(_)) => term,
+            (Term::Int(lhs @ Int { .. }), Term::Int(rhs @ Int { .. })) => {
+                let value = lhs.value.wrapping_add(rhs.value);
+                let location = lhs.location.merge(rhs.location);
+                Term::Int(Int { value, location })
+            }
+            (Term::Str(lhs @ Str { .. }), Term::Str(rhs @ Str { .. })) => {
+                let value = lhs.value + &rhs.value;
+                let location = lhs.location.merge(rhs.location);
+                Term::Str(Str { value, location })
+            }
+            (Term::Str(lhs @ Str { .. }), Term::Int(rhs @ Int { .. })) => {
+                let value = lhs.value + &rhs.value.to_string();
+                let location = lhs.location.merge(rhs.location);
+                Term::Str(Str { value, location })
+            }
+            (Term::Str(lhs @ Str { .. }), Term::Bool(rhs @ Bool { .. })) => {
+                let value = lhs.value + &rhs.value.to_string();
+                let location = lhs.location.merge(rhs.location);
+                Term::Str(Str { value, location })
+            }
+            (Term::Int(lhs @ Int { .. }), Term::Str(rhs @ Str { .. })) => {
+                let value = lhs.value.to_string() + &rhs.value;
+                let location = lhs.location.merge(rhs.location);
+                Term::Str(Str { value, location })
+            }
+            (Term::Bool(lhs @ Bool { .. }), Term::Str(rhs @ Str { .. })) => {
+                let value = lhs.value.to_string() + &rhs.value;
+                let location = lhs.location.merge(rhs.location);
+                Term::Str(Str { value, location })
+            }
+            (Term::Bool(Bool { .. }), rhs) => {
+                let message = "Unexpected right operand".into();
+                let full_text = "Expected operand of type \"Str\"".into();
+                error(rhs, message, full_text)
+            }
+            (Term::Int(Int { .. }), rhs) => {
+                let message = "Unexpected right operand".into();
+                let full_text =
+                    "Expected operand of type \"Int\" or \"Str\"".into();
+                error(rhs, message, full_text)
+            }
+            (Term::Str(Str { .. }), rhs) => {
+                let message = "Unexpected right operand".into();
+                let full_text =
+                    "Expected operand of type \"Bool\", \"Int\", or \"Str\""
+                        .into();
+                error(rhs, message, full_text)
+            }
+            (lhs, _) => {
+                let message = "Unexpected left operand".into();
+                let full_text =
+                    "Expected operand of type \"Bool\", \"Int\", or \"Str\""
+                        .into();
+                error(lhs, message, full_text)
+            }
+        }
+    }
 }
 
 macro_rules! impl_binary_op {
@@ -240,6 +304,7 @@ macro_rules! impl_binary_op {
                         return error(term, message, full_text);
                     }
                 };
+                #[allow(clippy::redundant_closure_call)]
                 let value = $ev(lhs, rhs);
                 let location = term.location;
                 Term::$out($out { value, location })
@@ -249,7 +314,6 @@ macro_rules! impl_binary_op {
 }
 
 impl_binary_op! {
-    eval_add[(Int, Int) => Int] = i32::wrapping_add;
     eval_sub[(Int, Int) => Int] = i32::wrapping_sub;
     eval_mul[(Int, Int) => Int] = i32::wrapping_mul;
     eval_div[(Int, Int) => Int] = i32::wrapping_div;
@@ -499,13 +563,6 @@ mod tests {
     }
 
     impl_eval_binary! {
-        eval_add[Add; (Int, Int) => Int] = {
-            (1, 1) => 2;
-            (1, -1) => 0;
-            (-1, -1) => -2;
-            (1, i32::MAX) => i32::MIN;
-        };
-
         eval_sub[Sub; (Int, Int) => Int] = {
             (1, 1) => 0;
             (1, -1) => 2;
@@ -590,6 +647,33 @@ mod tests {
             (false, true) => false;
             (true, false) => false;
             (true, true) => true;
+        };
+
+        eval_add_int_int[Add; (Int, Int) => Int] = {
+            (1, 1) => 2;
+            (1, -1) => 0;
+            (-1, -1) => -2;
+            (1, i32::MAX) => i32::MIN;
+        };
+
+        eval_add_int_str[Add; (Int, Str) => Str] = {
+            (1, "bar".into()) => "1bar".into();
+        };
+
+        eval_add_str_int[Add; (Str, Int) => Str] = {
+            ("foo".into(), 1) => "foo1".into();
+        };
+
+        eval_add_str_str[Add; (Str, Str) => Str] = {
+            ("foo".into(), "bar".into()) => "foobar".into();
+        };
+
+        eval_add_str_bool[Add; (Str, Bool) => Str] = {
+            ("foo".into(), true) => "footrue".into();
+        };
+
+        eval_add_bool_str[Add; (Bool, Str) => Str] = {
+            (false, "bar".into()) => "falsebar".into();
         };
     }
 }
